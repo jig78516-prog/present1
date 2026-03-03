@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>抽選結果</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root{
+      --bg0:#050814;
+      --bg1:#071021;
+      --card: rgba(20, 28, 45, .72);
+      --card2: rgba(20, 28, 45, .78);
+      --stroke: rgba(255,255,255,.08);
+      --text:#ffffff;
+      --muted: rgba(255,255,255,.72);
+      --muted2: rgba(255,255,255,.55);
+
+      --blue1:#5a9bff;
+      --blue2:#3f7ef6;
+
+      --green1:#39e26b;
+      --green2:#1fc25a;
+
+      --glow: rgba(70, 140, 255, .35);
+      --glowG: rgba(57, 226, 107, .28);
+      --gold: rgba(255, 210, 70, .9);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 50% 20%, rgba(30,60,130,.35), transparent 60%),
+        radial-gradient(900px 600px at 35% 80%, rgba(0,180,120,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+    }
+
+    /* floating dots */
+    .dots{
+      position:fixed; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      filter: drop-shadow(0 0 10px rgba(255,210,70,.12));
+      opacity:.9;
+    }
+    .dot{
+      position:absolute;
+      width:6px; height:6px;
+      border-radius:999px;
+      background: var(--gold);
+      opacity:.75;
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp{
+      from{ transform: translate3d(0, 120vh, 0); }
+      to{ transform: translate3d(0, -30vh, 0); }
+    }
+
+    /* center stage */
+    .stage{
+      position:fixed; inset:0;
+      display:grid;
+      place-items:center;
+      padding: 22px 14px;
+    }
+
+    .card{
+      width:min(560px, 92vw);
+      border-radius:26px;
+      background: linear-gradient(180deg, rgba(22,30,48,.74), rgba(12,18,34,.78));
+      border:1px solid var(--stroke);
+      box-shadow:
+        0 20px 60px rgba(0,0,0,.55),
+        0 0 0 1px rgba(255,255,255,.03) inset;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      padding: 28px 22px 22px;
+      position:relative;
+    }
+
+    .title{
+      font-weight:800;
+      font-size: clamp(22px, 4.6vw, 34px);
+      letter-spacing:.02em;
+      text-align:center;
+      margin: 6px 0 12px;
+    }
+    .desc{
+      text-align:center;
+      color:var(--muted);
+      line-height:1.8;
+      font-size: 16px;
+      margin: 0 0 18px;
+      white-space:pre-line;
+    }
+
+    .countWrap{
+      display:grid;
+      place-items:center;
+      margin: 4px 0 18px;
+      min-height: 94px;
+    }
+    .count{
+      font-weight:900;
+      font-size: 72px;
+      color: rgba(255, 210, 70, .92);
+      text-shadow: 0 0 28px rgba(255,210,70,.18);
+      transform: translateZ(0);
+      animation: pop .35s ease;
+    }
+    @keyframes pop{
+      from{ transform: scale(.92); opacity:.2; }
+      to{ transform: scale(1); opacity:1; }
+    }
+
+    .btn{
+      width: min(420px, 100%);
+      display:block;
+      margin: 0 auto;
+      border:none;
+      border-radius: 20px;
+      padding: 18px 16px;
+      font-size: 20px;
+      font-weight: 800;
+      color:#fff;
+      cursor:pointer;
+      transition: transform .08s ease, filter .12s ease;
+      box-shadow: 0 14px 34px rgba(0,0,0,.35);
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+
+    .btnBlue{
+      background: linear-gradient(180deg, var(--blue1), var(--blue2));
+      box-shadow:
+        0 16px 42px rgba(70, 140, 255, .18),
+        0 14px 34px rgba(0,0,0,.35);
+    }
+    .btnGreen{
+      background: linear-gradient(180deg, var(--green1), var(--green2));
+      box-shadow:
+        0 16px 42px rgba(57, 226, 107, .16),
+        0 14px 34px rgba(0,0,0,.35);
+      color:#0a1b0f;
+    }
+
+    .btnSub{
+      display:block;
+      margin-top:6px;
+      font-weight:700;
+      opacity:.8;
+      font-size: 14px;
+    }
+
+    .fade{
+      animation: fadeIn .28s ease both;
+    }
+    @keyframes fadeIn{
+      from{ opacity:0; transform: translateY(10px) scale(.99); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* Result card parts */
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin: 10px auto 14px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      font-weight:800;
+      letter-spacing:.04em;
+    }
+
+    .money{
+      text-align:center;
+      font-weight: 900;
+      font-size: clamp(44px, 10vw, 68px);
+      color: rgba(57, 226, 107, .95);
+      text-shadow: 0 0 36px var(--glowG);
+      margin: 0 0 14px;
+    }
+
+    .note{
+      text-align:center;
+      color: var(--muted2);
+      line-height:1.8;
+      margin: 8px 0 18px;
+      white-space:pre-line;
+      font-size: 16px;
+    }
+
+    .foot{
+      text-align:center;
+      color: rgba(255,255,255,.45);
+      font-size: 14px;
+      line-height:1.7;
+      margin-top: 14px;
+    }
+
+    /* small screens */
+    @media (max-width:420px){
+      .card{ padding: 24px 18px 18px; border-radius:22px; }
+      .btn{ border-radius:18px; font-size: 18px; padding: 16px 14px; }
+      .count{ font-size: 66px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dots" id="dots"></div>
+
+  <div class="stage">
+    <!-- SCREEN 1: countdown modal -->
+    <section class="card fade" id="screenStart" aria-live="polite">
+      <h1 class="title">抽選結果の発表</h1>
+      <p class="desc">エントリー情報を確認しました。<br>結果を表示します。</p>
+
+      <div class="countWrap">
+        <div class="count" id="count">3</div>
+      </div>
+
+      <button class="btn btnBlue" id="btnStart">結果を見る</button>
+    </section>
+
+    <!-- SCREEN 2: result -->
+    <section class="card" id="screenResult" style="display:none;">
+      <h2 class="title">🎉 当選おめでとうございます 🎉</h2>
+      <div style="text-align:center;">
+        <div class="pill">【20歳以上限定】</div>
+      </div>
+
+      <div class="money" id="money">350,000円</div>
+
+      <p class="note">お受け取りには公式LINEの追加が必要です。<br>下のボタンからお手続きください。</p>
+
+      <button class="btn btnGreen" id="btnLine">
+        ここから受け取り
+        <span class="btnSub">（公式LINEへ移動します。）</span>
+      </button>
+
+      <div class="foot">※一定時間を過ぎると受け取り権利は無効になる場合があります。</div>
+    </section>
+  </div>
+
+  <script>
+    // ====== 設定（ここだけ変更すればOK） ======
+    const LINE_URL = "https://line.me/R/ti/p/@YOUR_LINE_ID"; // ←ここを自分のLINEに変更
+    const PRIZE_TEXT = "350,000円"; // 表示金額
+    const AGE_LIMIT_TEXT = "【20歳以上限定】";
+
+    // ====== dots background ======
+    (function makeDots(){
+      const wrap = document.getElementById('dots');
+      const count = 22; // 黄色の点の数
+      for(let i=0;i<count;i++){
+        const d = document.createElement('div');
+        d.className = 'dot';
+        const left = Math.random()*100;
+        const size = 4 + Math.random()*5; // 4-9px
+        const dur = 7 + Math.random()*10; // 7-17s
+        const delay = -Math.random()*dur; // すでに動いてる風
+        d.style.left = left + 'vw';
+        d.style.width = size + 'px';
+        d.style.height = size + 'px';
+        d.style.opacity = (0.35 + Math.random()*0.55).toFixed(2);
+        d.style.animationDuration = dur + 's';
+        d.style.animationDelay = delay + 's';
+        wrap.appendChild(d);
+      }
+    })();
+
+    // ====== flow ======
+    const screenStart = document.getElementById('screenStart');
+    const screenResult = document.getElementById('screenResult');
+    const countEl = document.getElementById('count');
+    const btnStart = document.getElementById('btnStart');
+    const btnLine = document.getElementById('btnLine');
+    const moneyEl = document.getElementById('money');
+
+    moneyEl.textContent = PRIZE_TEXT;
+
+    let running = false;
+
+    function setCount(val){
+      countEl.textContent = val;
+      // pop animation re-trigger
+      countEl.style.animation = 'none';
+      // eslint-disable-next-line no-unused-expressions
+      countEl.offsetHeight;
+      countEl.style.animation = '';
+    }
+
+    function showResult(){
+      screenStart.style.display = 'none';
+      screenResult.style.display = 'block';
+      screenResult.classList.add('fade');
+    }
+
+    btnStart.addEventListener('click', () => {
+      if(running) return;
+      running = true;
+      btnStart.disabled = true;
+      btnStart.style.filter = 'grayscale(.25) brightness(.95)';
+      btnStart.style.cursor = 'default';
+
+      const seq = ["3","2","1","🎉"];
+      let i = 0;
+      setCount(seq[i]);
+
+      const timer = setInterval(() => {
+        i++;
+        if(i >= seq.length){
+          clearInterval(timer);
+          // 少し余韻
+          setTimeout(showResult, 650);
+          return;
+        }
+        setCount(seq[i]);
+      }, 900);
+    });
+
+    btnLine.addEventListener('click', () => {
+      window.location.href = LINE_URL;
+    });
+  </script>
+</body>
+</html>
